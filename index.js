@@ -26,16 +26,22 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Load a font (you'll need to add a font file)
-// Download Inter font from Google Fonts and place it in server/fonts/
+// Load fonts
 let fontData;
+let bebasNeueFont;
 try {
     fontData = readFileSync(join(__dirname, "fonts", "Roboto-Bold.ttf"));
 } catch (e) {
     console.warn(
         "Font file not found. Please add Roboto-Bold.ttf to server/fonts/",
     );
-    console.warn("Download from: https://fonts.google.com/specimen/Roboto");
+}
+try {
+    bebasNeueFont = readFileSync(join(__dirname, "fonts", "BebasNeue-Regular.ttf"));
+} catch (e) {
+    console.warn(
+        "Bebas Neue font not found. Please add BebasNeue-Regular.ttf to server/fonts/",
+    );
 }
 
 // Star SVG component for Satori
@@ -357,6 +363,162 @@ function MovieCardTemplate({ mainTitle, title, image, rating, year, genre, descr
     };
 }
 
+// Generate a random vibrant accent color
+function getRandomAccentColor() {
+    const colors = [
+        "#DB3E1B", // Orange-red
+        "#E91E63", // Pink
+        "#9C27B0", // Purple
+        "#673AB7", // Deep Purple
+        "#3F51B5", // Indigo
+        "#2196F3", // Blue
+        "#00BCD4", // Cyan
+        "#009688", // Teal
+        "#4CAF50", // Green
+        "#8BC34A", // Light Green
+        "#FF9800", // Orange
+        "#FF5722", // Deep Orange
+        "#F44336", // Red
+        "#00E676", // Bright Green
+        "#FFD600", // Yellow
+    ];
+    return colors[Math.floor(Math.random() * colors.length)];
+}
+
+// Cover Slide Template - Instagram carousel style matching Figma design
+function CoverSlideTemplate({
+    title = "How to Improve your Instagram",
+    backgroundColor = "#eab308"
+}) {
+    return {
+        type: "div",
+        props: {
+            style: {
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "space-between",
+                padding: "60px",
+                backgroundColor: backgroundColor,
+            },
+            children: [
+                // Empty top spacer
+                {
+                    type: "div",
+                    props: {
+                        style: { display: "flex" },
+                    },
+                },
+                // Main title text - large white uppercase
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            fontSize: "180px",
+                            fontFamily: "Bebas Neue",
+                            fontWeight: 400,
+                            lineHeight: 0.95,
+                            textTransform: "uppercase",
+                            color: "white",
+                            letterSpacing: "2px",
+                        },
+                        children: title,
+                    },
+                },
+                // Swipe >> at bottom right
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            justifyContent: "flex-end",
+                            fontSize: "32px",
+                            fontFamily: "Bebas Neue",
+                            fontWeight: 400,
+                            color: "white",
+                            letterSpacing: "2px",
+                        },
+                        children: "SWIPE >>",
+                    },
+                },
+            ],
+        },
+    };
+}
+
+// API endpoint to generate cover slide
+app.post("/api/generate-cover", async (req, res) => {
+    try {
+        const {
+            title = "How to Improve your Instagram",
+            backgroundColor = "#eab308",
+            width = 1080,
+            height = 1350,
+        } = req.body;
+
+        if (!bebasNeueFont) {
+            return res.status(500).json({
+                error:
+                    "Font not configured. Add BebasNeue-Regular.ttf to server/fonts/",
+            });
+        }
+
+        // Generate SVG using Satori
+        const svg = await satori(
+            CoverSlideTemplate({
+                title,
+                backgroundColor,
+            }),
+            {
+                width,
+                height,
+                fonts: [
+                    {
+                        name: "Bebas Neue",
+                        data: bebasNeueFont,
+                        weight: 400,
+                        style: "normal",
+                    },
+                    {
+                        name: "Inter",
+                        data: fontData,
+                        weight: 700,
+                        style: "normal",
+                    },
+                ],
+            },
+        );
+
+        // Convert SVG to PNG using Resvg
+        const resvg = new Resvg(svg, {
+            background: "rgba(0, 0, 0, 1)",
+            fitTo: {
+                mode: "width",
+                value: width,
+            },
+        });
+
+        const pngData = resvg.render();
+        const pngBuffer = pngData.asPng();
+
+        // Return the PNG image
+        res.setHeader("Content-Type", "image/png");
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename="cover-slide.png"`,
+        );
+        res.send(pngBuffer);
+    } catch (error) {
+        console.error("Error generating cover slide:", error);
+        res.status(500).json({
+            error: "Failed to generate cover slide",
+            details: error.message,
+        });
+    }
+});
+
 // API endpoint to generate movie card
 app.post("/api/generate-card", async (req, res) => {
     try {
@@ -364,7 +526,7 @@ app.post("/api/generate-card", async (req, res) => {
             mainTitle = "Popular Movies 2026",
             title = "Movie Title",
             image =
-                "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=1080",
+            "https://images.unsplash.com/photo-1440404653325-ab127d49abc1?w=1080",
             rating = 4,
             year = 2026,
             genre = "Action",
@@ -429,8 +591,7 @@ app.post("/api/generate-card", async (req, res) => {
         res.setHeader("Content-Type", "image/png");
         res.setHeader(
             "Content-Disposition",
-            `attachment; filename="${
-                title.toLowerCase().replace(/\s+/g, "-")
+            `attachment; filename="${title.toLowerCase().replace(/\s+/g, "-")
             }-movie-card.png"`,
         );
         res.send(pngBuffer);
