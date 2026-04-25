@@ -212,6 +212,34 @@ function MovieCardTemplate({ mainTitle, title, image, rating, year, genre, descr
                                     ],
                                 },
                             },
+                            // watta.watch watermark - bottom right corner
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        position: "absolute",
+                                        bottom: "40px",
+                                        right: "40px",
+                                        backgroundColor: "rgba(0,0,0,0.45)",
+                                        borderRadius: "9999px",
+                                        padding: "8px 20px",
+                                    },
+                                    children: {
+                                        type: "span",
+                                        props: {
+                                            style: {
+                                                fontSize: "22px",
+                                                fontFamily: "Bebas Neue",
+                                                fontWeight: 400,
+                                                color: "rgba(255,255,255,0.7)",
+                                                letterSpacing: "1px",
+                                            },
+                                            children: "watta.watch",
+                                        },
+                                    },
+                                },
+                            },
                             // Bottom Content
                             {
                                 type: "div",
@@ -397,9 +425,10 @@ function getRandomAccentColor() {
     return colors[Math.floor(Math.random() * colors.length)];
 }
 
-// Cover Slide Template - Instagram carousel style matching Figma design
+// Cover Slide Template - TikTok carousel style with hook + branding
 function CoverSlideTemplate({
-    title = "How to Improve your Instagram",
+    title = "Trending on Netflix",
+    hookText = "Can't decide what to watch?",
     backgroundColor = "#eab308"
 }) {
     return {
@@ -411,48 +440,209 @@ function CoverSlideTemplate({
                 display: "flex",
                 flexDirection: "column",
                 justifyContent: "space-between",
-                padding: "60px",
+                padding: "70px",
                 backgroundColor: backgroundColor,
             },
             children: [
-                // Empty top spacer
-                {
-                    type: "div",
-                    props: {
-                        style: { display: "flex" },
-                    },
-                },
-                // Main title text - large white uppercase
+                // Top: watta.watch branding
                 {
                     type: "div",
                     props: {
                         style: {
                             display: "flex",
-                            fontSize: "180px",
-                            fontFamily: "Bebas Neue",
-                            fontWeight: 400,
-                            lineHeight: 0.95,
-                            textTransform: "uppercase",
-                            color: "white",
-                            letterSpacing: "2px",
+                            alignItems: "center",
+                            gap: "14px",
                         },
-                        children: title,
+                        children: [
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        backgroundColor: "rgba(0,0,0,0.2)",
+                                        borderRadius: "9999px",
+                                        padding: "12px 28px",
+                                    },
+                                    children: {
+                                        type: "span",
+                                        props: {
+                                            style: {
+                                                fontSize: "30px",
+                                                fontFamily: "Bebas Neue",
+                                                fontWeight: 400,
+                                                color: "white",
+                                                letterSpacing: "2px",
+                                            },
+                                            children: "watta.watch",
+                                        },
+                                    },
+                                },
+                            },
+                        ],
                     },
                 },
-                // Swipe >> at bottom right
+                // Middle: hook + main title stacked
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "20px",
+                        },
+                        children: [
+                            // Hook question - smaller, italic-feel
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        fontSize: "52px",
+                                        fontFamily: "Inter",
+                                        fontWeight: 700,
+                                        color: "rgba(255,255,255,0.85)",
+                                        lineHeight: 1.2,
+                                    },
+                                    children: hookText,
+                                },
+                            },
+                            // Main platform title - huge
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        fontSize: "148px",
+                                        fontFamily: "Bebas Neue",
+                                        fontWeight: 400,
+                                        lineHeight: 0.9,
+                                        textTransform: "uppercase",
+                                        color: "white",
+                                        letterSpacing: "2px",
+                                    },
+                                    children: title,
+                                },
+                            },
+                        ],
+                    },
+                },
+                // Bottom: swipe hint
                 {
                     type: "div",
                     props: {
                         style: {
                             display: "flex",
                             justifyContent: "flex-end",
-                            fontSize: "32px",
-                            fontFamily: "Bebas Neue",
-                            fontWeight: 400,
-                            color: "white",
-                            letterSpacing: "2px",
+                            alignItems: "center",
+                            gap: "10px",
                         },
-                        children: "SWIPE >>",
+                        children: {
+                            type: "div",
+                            props: {
+                                style: {
+                                    display: "flex",
+                                    fontSize: "32px",
+                                    fontFamily: "Bebas Neue",
+                                    fontWeight: 400,
+                                    color: "rgba(255,255,255,0.7)",
+                                    letterSpacing: "3px",
+                                },
+                                children: "SWIPE FOR THE LIST >>",
+                            },
+                        },
+                    },
+                },
+            ],
+        },
+    };
+}
+
+// CTA Slide Template for TikTok carousels - last slide driving app downloads
+function CarouselCTASlideTemplate({ backgroundColor = "#eab308" }) {
+    return {
+        type: "div",
+        props: {
+            style: {
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "80px",
+                backgroundColor: backgroundColor,
+                gap: "40px",
+            },
+            children: [
+                // Main CTA
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "24px",
+                        },
+                        children: [
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        fontSize: "42px",
+                                        fontFamily: "Inter",
+                                        fontWeight: 700,
+                                        color: "rgba(255,255,255,0.85)",
+                                        textAlign: "center",
+                                        lineHeight: 1.3,
+                                    },
+                                    children: "Let AI pick what you watch next",
+                                },
+                            },
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        fontSize: "140px",
+                                        fontFamily: "Bebas Neue",
+                                        fontWeight: 400,
+                                        lineHeight: 0.9,
+                                        textTransform: "uppercase",
+                                        color: "white",
+                                        letterSpacing: "2px",
+                                        textAlign: "center",
+                                    },
+                                    children: "watta.watch",
+                                },
+                            },
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        backgroundColor: "rgba(0,0,0,0.25)",
+                                        borderRadius: "9999px",
+                                        padding: "18px 48px",
+                                        marginTop: "10px",
+                                    },
+                                    children: {
+                                        type: "span",
+                                        props: {
+                                            style: {
+                                                fontSize: "34px",
+                                                fontFamily: "Bebas Neue",
+                                                fontWeight: 400,
+                                                color: "white",
+                                                letterSpacing: "3px",
+                                            },
+                                            children: "FREE ON IOS  •  LINK IN BIO",
+                                        },
+                                    },
+                                },
+                            },
+                        ],
                     },
                 },
             ],
@@ -516,25 +706,63 @@ function HookSlideTemplate({ hookText = "STOP scrolling Netflix", posters = [] }
                         },
                     },
                 },
-                // Hook text
+                // Hook text block
                 {
                     type: "div",
                     props: {
                         style: {
                             display: "flex",
-                            fontSize: "120px",
-                            fontFamily: "Bebas Neue",
-                            fontWeight: 400,
-                            lineHeight: 1.1,
-                            textTransform: "uppercase",
-                            color: "white",
-                            letterSpacing: "4px",
-                            textAlign: "center",
-                            maxWidth: "900px",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "32px",
                             position: "relative",
                             padding: "80px",
                         },
-                        children: hookText,
+                        children: [
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        fontSize: "120px",
+                                        fontFamily: "Bebas Neue",
+                                        fontWeight: 400,
+                                        lineHeight: 1.05,
+                                        textTransform: "uppercase",
+                                        color: "white",
+                                        letterSpacing: "4px",
+                                        textAlign: "center",
+                                        maxWidth: "900px",
+                                    },
+                                    children: hookText,
+                                },
+                            },
+                            // watta.watch sub-label
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        backgroundColor: "rgba(234,179,8,0.85)",
+                                        borderRadius: "9999px",
+                                        padding: "14px 36px",
+                                    },
+                                    children: {
+                                        type: "span",
+                                        props: {
+                                            style: {
+                                                fontSize: "32px",
+                                                fontFamily: "Bebas Neue",
+                                                fontWeight: 400,
+                                                color: "white",
+                                                letterSpacing: "3px",
+                                            },
+                                            children: "watta.watch  •  AI PICKS",
+                                        },
+                                    },
+                                },
+                            },
+                        ],
                     },
                 },
             ],
@@ -729,8 +957,8 @@ function ReelMovieSlideTemplate({ title, poster, rating, year, genre, place }) {
     };
 }
 
-// CTA Slide Template for Reels - Simple dark background with centered CTA text
-function CTASlideTemplate({ ctaText = "Follow @wattawatch" }) {
+// CTA Slide Template for Instagram Reels - App download focused
+function CTASlideTemplate({ ctaText = "Download Watta Watch" }) {
     return {
         type: "div",
         props: {
@@ -742,24 +970,104 @@ function CTASlideTemplate({ ctaText = "Follow @wattawatch" }) {
                 justifyContent: "center",
                 alignItems: "center",
                 padding: "80px",
-                background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)",
+                background: "linear-gradient(160deg, #1a1a2e 0%, #16213e 60%, #0f0f23 100%)",
+                gap: "0px",
             },
             children: [
+                // "Stop scrolling. Start watching." top label
                 {
                     type: "div",
                     props: {
                         style: {
                             display: "flex",
-                            fontSize: "80px",
+                            fontSize: "38px",
+                            fontFamily: "Inter",
+                            fontWeight: 700,
+                            color: "rgba(255,255,255,0.5)",
+                            letterSpacing: "2px",
+                            textAlign: "center",
+                            textTransform: "uppercase",
+                            marginBottom: "30px",
+                        },
+                        children: "Stop scrolling. Start watching.",
+                    },
+                },
+                // Big app name
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            fontSize: "130px",
                             fontFamily: "Bebas Neue",
                             fontWeight: 400,
-                            lineHeight: 1.2,
-                            color: "white",
-                            letterSpacing: "3px",
+                            lineHeight: 0.9,
+                            color: "#eab308",
+                            letterSpacing: "4px",
                             textAlign: "center",
-                            maxWidth: "900px",
                         },
-                        children: ctaText,
+                        children: "WATTA\nWATCH",
+                    },
+                },
+                // Tagline
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            fontSize: "36px",
+                            fontFamily: "Inter",
+                            fontWeight: 700,
+                            color: "rgba(255,255,255,0.65)",
+                            textAlign: "center",
+                            marginTop: "28px",
+                            maxWidth: "800px",
+                            lineHeight: 1.4,
+                        },
+                        children: "AI-powered movie & TV guide.\nNo more endless scrolling.",
+                    },
+                },
+                // CTA pill button
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            backgroundColor: "#eab308",
+                            borderRadius: "9999px",
+                            padding: "28px 64px",
+                            marginTop: "60px",
+                        },
+                        children: {
+                            type: "span",
+                            props: {
+                                style: {
+                                    fontSize: "44px",
+                                    fontFamily: "Bebas Neue",
+                                    fontWeight: 400,
+                                    color: "white",
+                                    letterSpacing: "3px",
+                                },
+                                children: ctaText,
+                            },
+                        },
+                    },
+                },
+                // Link in bio note
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            fontSize: "30px",
+                            fontFamily: "Inter",
+                            fontWeight: 700,
+                            color: "rgba(255,255,255,0.35)",
+                            marginTop: "28px",
+                            letterSpacing: "1px",
+                            textTransform: "uppercase",
+                        },
+                        children: "↑  Link in bio  •  Free on iOS",
                     },
                 },
             ],
@@ -771,7 +1079,8 @@ function CTASlideTemplate({ ctaText = "Follow @wattawatch" }) {
 app.post("/api/generate-cover", async (req, res) => {
     try {
         const {
-            title = "How to Improve your Instagram",
+            title = "Trending on Netflix",
+            hookText = "Can't decide what to watch?",
             backgroundColor = "#eab308",
             width = 1080,
             height = 1350,
@@ -788,6 +1097,7 @@ app.post("/api/generate-cover", async (req, res) => {
         const svg = await satori(
             CoverSlideTemplate({
                 title,
+                hookText,
                 backgroundColor,
             }),
             {
@@ -927,6 +1237,59 @@ app.post("/api/generate-card", async (req, res) => {
     }
 });
 
+// API endpoint to generate carousel CTA slide (last slide for TikTok carousels)
+app.post("/api/generate-carousel-cta", async (req, res) => {
+    try {
+        const {
+            backgroundColor = "#eab308",
+            width = 1080,
+            height = 1350,
+        } = req.body;
+
+        if (!bebasNeueFont || !fontData) {
+            return res.status(500).json({
+                error: "Fonts not configured.",
+            });
+        }
+
+        const svg = await satori(
+            CarouselCTASlideTemplate({ backgroundColor }),
+            {
+                width,
+                height,
+                fonts: [
+                    {
+                        name: "Bebas Neue",
+                        data: bebasNeueFont,
+                        weight: 400,
+                        style: "normal",
+                    },
+                    {
+                        name: "Inter",
+                        data: fontData,
+                        weight: 700,
+                        style: "normal",
+                    },
+                ],
+            },
+        );
+
+        const resvg = new Resvg(svg, {
+            background: "rgba(0, 0, 0, 1)",
+            fitTo: { mode: "width", value: width },
+        });
+
+        const pngBuffer = resvg.render().asPng();
+
+        res.setHeader("Content-Type", "image/png");
+        res.setHeader("Content-Disposition", `attachment; filename="carousel-cta.png"`);
+        res.send(pngBuffer);
+    } catch (error) {
+        console.error("Error generating carousel CTA:", error);
+        res.status(500).json({ error: "Failed to generate carousel CTA", details: error.message });
+    }
+});
+
 // Health check endpoint
 app.get("/api/health", (req, res) => {
     res.json({ status: "ok", fontLoaded: !!fontData });
@@ -988,7 +1351,7 @@ app.post("/api/generate-reel", async (req, res) => {
     const tempDir = join(tmpdir(), `reel-${sessionId}`);
 
     try {
-        const { hookText, movies, ctaText, audioUrl } = req.body;
+        const { hookText, movies, ctaText, audioUrl, platform = "instagram" } = req.body;
 
         // Validation
         if (!hookText) {
@@ -1039,13 +1402,20 @@ app.post("/api/generate-reel", async (req, res) => {
             posterBase64Array.push(posterBase64);
         }
 
+        // Instagram Reels: longer durations for higher completion rate
+        // TikTok video: snappier pacing
+        const isInstagram = platform !== "tiktok";
+        const hookDuration = isInstagram ? 2.0 : 1.5;
+        const movieDuration = isInstagram ? 1.5 : 1.0;
+        const ctaDuration = isInstagram ? 2.0 : 1.2;
+
         // Generate Hook slide with poster collage background
         console.log(`[${sessionId}] Generating hook slide...`);
         const hookPng = await generateSlidePng(HookSlideTemplate({ hookText, posters: posterBase64Array }), width, height);
         const hookPath = join(tempDir, "slide_0_hook.png");
         writeFileSync(hookPath, hookPng);
         slideFiles.push(hookPath);
-        slideDurations.push(1.5);
+        slideDurations.push(hookDuration);
 
         // Generate Movie slides
         for (let i = 0; i < movies.length; i++) {
@@ -1067,7 +1437,7 @@ app.post("/api/generate-reel", async (req, res) => {
             const moviePath = join(tempDir, `slide_${i + 1}_movie.png`);
             writeFileSync(moviePath, moviePng);
             slideFiles.push(moviePath);
-            slideDurations.push(1.0);
+            slideDurations.push(movieDuration);
         }
 
         // Generate CTA slide
@@ -1076,7 +1446,7 @@ app.post("/api/generate-reel", async (req, res) => {
         const ctaPath = join(tempDir, `slide_${movies.length + 1}_cta.png`);
         writeFileSync(ctaPath, ctaPng);
         slideFiles.push(ctaPath);
-        slideDurations.push(1.2);
+        slideDurations.push(ctaDuration);
 
         // Generate individual video segments with zoom effect
         console.log(`[${sessionId}] Creating video segments with zoom effect...`);
