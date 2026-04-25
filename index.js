@@ -2,14 +2,26 @@ import express from "express";
 import cors from "cors";
 import satori from "satori";
 import { Resvg } from "@resvg/resvg-js";
-import { readFileSync } from "fs";
+import sharp from "sharp";
+import { readFileSync, writeFileSync, mkdirSync, rmSync, existsSync, unlinkSync } from "fs";
 import { dirname, join } from "path";
 import { fileURLToPath } from "url";
+import { execSync } from "child_process";
+import { tmpdir } from "os";
+import { randomUUID } from "crypto";
 
 // Helper to fetch images and convert to base64
 async function fetchImageAsBase64(url) {
     try {
-        const response = await fetch(url);
+        const response = await fetch(url, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            },
+        });
+        if (!response.ok) {
+            console.error(`Failed to fetch image: ${response.status} ${response.statusText}`);
+            return null;
+        }
         const arrayBuffer = await response.arrayBuffer();
         const base64 = Buffer.from(arrayBuffer).toString('base64');
         const contentType = response.headers.get('content-type') || 'image/jpeg';
@@ -448,6 +460,313 @@ function CoverSlideTemplate({
     };
 }
 
+// Hook Slide Template for Reels - Poster collage background with large centered text
+function HookSlideTemplate({ hookText = "STOP scrolling Netflix", posters = [] }) {
+    // Create poster grid positions for collage effect
+    const posterPositions = [
+        { top: 0, left: 0, width: "540px", height: "810px" },
+        { top: 0, left: 540, width: "540px", height: "810px" },
+        { top: 810, left: 0, width: "540px", height: "810px" },
+        { top: 810, left: 540, width: "540px", height: "810px" },
+        { top: 1620, left: 0, width: "540px", height: "300px" },
+        { top: 1620, left: 540, width: "540px", height: "300px" },
+    ];
+
+    return {
+        type: "div",
+        props: {
+            style: {
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                position: "relative",
+                backgroundColor: "#0a0a0a",
+            },
+            children: [
+                // Poster collage background
+                ...posters.slice(0, 6).map((poster, index) => ({
+                    type: "img",
+                    props: {
+                        src: poster,
+                        style: {
+                            position: "absolute",
+                            top: `${posterPositions[index]?.top || 0}px`,
+                            left: `${posterPositions[index]?.left || 0}px`,
+                            width: posterPositions[index]?.width || "540px",
+                            height: posterPositions[index]?.height || "810px",
+                            objectFit: "cover",
+                            opacity: 0.4,
+                        },
+                    },
+                })),
+                // Dark overlay for better text readability
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            position: "absolute",
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            background: "rgba(0, 0, 0, 0.6)",
+                        },
+                    },
+                },
+                // Hook text
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            fontSize: "120px",
+                            fontFamily: "Bebas Neue",
+                            fontWeight: 400,
+                            lineHeight: 1.1,
+                            textTransform: "uppercase",
+                            color: "white",
+                            letterSpacing: "4px",
+                            textAlign: "center",
+                            maxWidth: "900px",
+                            position: "relative",
+                            padding: "80px",
+                        },
+                        children: hookText,
+                    },
+                },
+            ],
+        },
+    };
+}
+
+// Reel Movie Slide Template - Centered poster card with title, place, and rating
+function ReelMovieSlideTemplate({ title, poster, rating, year, genre, place }) {
+    // SVG Star icon for rating
+    const StarSvg = {
+        type: "svg",
+        props: {
+            width: 40,
+            height: 40,
+            viewBox: "0 0 24 24",
+            fill: "#facc15",
+            children: {
+                type: "path",
+                props: {
+                    d: "M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z",
+                },
+            },
+        },
+    };
+
+    return {
+        type: "div",
+        props: {
+            style: {
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "60px",
+                backgroundColor: "#0a0a0a",
+            },
+            children: [
+                // Movie poster card
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            flexDirection: "column",
+                            alignItems: "center",
+                            gap: "30px",
+                        },
+                        children: [
+                            // Place number badge
+                            place ? {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        fontSize: "72px",
+                                        fontFamily: "Bebas Neue",
+                                        fontWeight: 400,
+                                        color: "white",
+                                        letterSpacing: "2px",
+                                    },
+                                    children: `#${place}`,
+                                },
+                            } : null,
+                            // Poster image container
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        borderRadius: "20px",
+                                        overflow: "hidden",
+                                        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.8)",
+                                    },
+                                    children: [
+                                        {
+                                            type: "img",
+                                            props: {
+                                                src: poster,
+                                                style: {
+                                                    width: "600px",
+                                                    height: "900px",
+                                                    objectFit: "cover",
+                                                },
+                                            },
+                                        },
+                                    ],
+                                },
+                            },
+                            // Movie title
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        fontSize: "64px",
+                                        fontFamily: "Bebas Neue",
+                                        fontWeight: 400,
+                                        color: "white",
+                                        letterSpacing: "2px",
+                                        textAlign: "center",
+                                        maxWidth: "900px",
+                                    },
+                                    children: title,
+                                },
+                            },
+                            // Rating badge with SVG star
+                            {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "12px",
+                                        backgroundColor: "rgba(250, 204, 21, 0.15)",
+                                        padding: "16px 32px",
+                                        borderRadius: "9999px",
+                                        border: "2px solid rgba(250, 204, 21, 0.3)",
+                                    },
+                                    children: [
+                                        StarSvg,
+                                        {
+                                            type: "span",
+                                            props: {
+                                                style: {
+                                                    fontSize: "48px",
+                                                    fontFamily: "Bebas Neue",
+                                                    color: "#facc15",
+                                                    letterSpacing: "1px",
+                                                },
+                                                children: String(rating),
+                                            },
+                                        },
+                                    ],
+                                },
+                            },
+                            // Year and genre
+                            year || genre ? {
+                                type: "div",
+                                props: {
+                                    style: {
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: "16px",
+                                        marginTop: "10px",
+                                    },
+                                    children: [
+                                        year ? {
+                                            type: "span",
+                                            props: {
+                                                style: {
+                                                    fontSize: "32px",
+                                                    fontFamily: "Inter",
+                                                    color: "rgba(255, 255, 255, 0.6)",
+                                                },
+                                                children: String(year),
+                                            },
+                                        } : null,
+                                        year && genre ? {
+                                            type: "span",
+                                            props: {
+                                                style: {
+                                                    fontSize: "32px",
+                                                    color: "rgba(255, 255, 255, 0.3)",
+                                                },
+                                                children: "\u2022",
+                                            },
+                                        } : null,
+                                        genre ? {
+                                            type: "span",
+                                            props: {
+                                                style: {
+                                                    fontSize: "32px",
+                                                    fontFamily: "Inter",
+                                                    color: "rgba(255, 255, 255, 0.6)",
+                                                },
+                                                children: genre,
+                                            },
+                                        } : null,
+                                    ].filter(Boolean),
+                                },
+                            } : null,
+                        ].filter(Boolean),
+                    },
+                },
+            ],
+        },
+    };
+}
+
+// CTA Slide Template for Reels - Simple dark background with centered CTA text
+function CTASlideTemplate({ ctaText = "Follow @wattawatch" }) {
+    return {
+        type: "div",
+        props: {
+            style: {
+                width: "100%",
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                justifyContent: "center",
+                alignItems: "center",
+                padding: "80px",
+                background: "linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f0f23 100%)",
+            },
+            children: [
+                {
+                    type: "div",
+                    props: {
+                        style: {
+                            display: "flex",
+                            fontSize: "80px",
+                            fontFamily: "Bebas Neue",
+                            fontWeight: 400,
+                            lineHeight: 1.2,
+                            color: "white",
+                            letterSpacing: "3px",
+                            textAlign: "center",
+                            maxWidth: "900px",
+                        },
+                        children: ctaText,
+                    },
+                },
+            ],
+        },
+    };
+}
+
 // API endpoint to generate cover slide
 app.post("/api/generate-cover", async (req, res) => {
     try {
@@ -587,14 +906,18 @@ app.post("/api/generate-card", async (req, res) => {
         const pngData = resvg.render();
         const pngBuffer = pngData.asPng();
 
-        // Return the PNG image
-        res.setHeader("Content-Type", "image/png");
+        const jpegBuffer = await sharp(pngBuffer)
+            .jpeg({ quality: 85, mozjpeg: true })
+            .toBuffer();
+
+        // Return the JPEG image
+        res.setHeader("Content-Type", "image/jpeg");
         res.setHeader(
             "Content-Disposition",
             `attachment; filename="${title.toLowerCase().replace(/\s+/g, "-")
-            }-movie-card.png"`,
+            }-movie-card.jpg"`,
         );
-        res.send(pngBuffer);
+        res.send(jpegBuffer);
     } catch (error) {
         console.error("Error generating card:", error);
         res.status(500).json({
@@ -622,6 +945,257 @@ app.get("/api/example", (req, res) => {
             description: "A mind-bending thriller about dreams within dreams.",
             width: 1080,
             height: 1350,
+        },
+    });
+});
+
+// Helper function to generate a slide PNG
+async function generateSlidePng(template, width, height) {
+    const svg = await satori(template, {
+        width,
+        height,
+        fonts: [
+            {
+                name: "Bebas Neue",
+                data: bebasNeueFont,
+                weight: 400,
+                style: "normal",
+            },
+            {
+                name: "Inter",
+                data: fontData,
+                weight: 700,
+                style: "normal",
+            },
+        ],
+    });
+
+    const resvg = new Resvg(svg, {
+        background: "rgba(0, 0, 0, 1)",
+        fitTo: {
+            mode: "width",
+            value: width,
+        },
+    });
+
+    const pngData = resvg.render();
+    return pngData.asPng();
+}
+
+// API endpoint to generate Instagram Reels/TikTok video
+app.post("/api/generate-reel", async (req, res) => {
+    const sessionId = randomUUID();
+    const tempDir = join(tmpdir(), `reel-${sessionId}`);
+
+    try {
+        const { hookText, movies, ctaText, audioUrl } = req.body;
+
+        // Validation
+        if (!hookText) {
+            return res.status(400).json({ error: "hookText is required" });
+        }
+        if (!movies || !Array.isArray(movies) || movies.length < 2 || movies.length > 6) {
+            return res.status(400).json({ error: "movies must be an array with 2-6 items" });
+        }
+        if (!ctaText) {
+            return res.status(400).json({ error: "ctaText is required" });
+        }
+
+        // Validate each movie has required fields
+        for (let i = 0; i < movies.length; i++) {
+            const movie = movies[i];
+            if (!movie.title || !movie.poster || movie.rating === undefined) {
+                return res.status(400).json({
+                    error: `Movie at index ${i} must have title, poster, and rating`
+                });
+            }
+        }
+
+        if (!bebasNeueFont || !fontData) {
+            return res.status(500).json({
+                error: "Fonts not configured. Ensure BebasNeue-Regular.ttf and Roboto-Bold.ttf are in the fonts/ directory.",
+            });
+        }
+
+        // Create temp directory
+        mkdirSync(tempDir, { recursive: true });
+
+        const width = 1080;
+        const height = 1920;
+        const slideFiles = [];
+        const slideDurations = [];
+
+        // Fetch all posters first (needed for hook slide background)
+        console.log(`[${sessionId}] Fetching movie posters...`);
+        const posterBase64Array = [];
+        for (let i = 0; i < movies.length; i++) {
+            const movie = movies[i];
+            const posterBase64 = await fetchImageAsBase64(movie.poster);
+            if (!posterBase64) {
+                return res.status(400).json({
+                    error: `Failed to fetch poster for movie: ${movie.title}`
+                });
+            }
+            posterBase64Array.push(posterBase64);
+        }
+
+        // Generate Hook slide with poster collage background
+        console.log(`[${sessionId}] Generating hook slide...`);
+        const hookPng = await generateSlidePng(HookSlideTemplate({ hookText, posters: posterBase64Array }), width, height);
+        const hookPath = join(tempDir, "slide_0_hook.png");
+        writeFileSync(hookPath, hookPng);
+        slideFiles.push(hookPath);
+        slideDurations.push(1.5);
+
+        // Generate Movie slides
+        for (let i = 0; i < movies.length; i++) {
+            const movie = movies[i];
+            console.log(`[${sessionId}] Generating movie slide ${i + 1}: ${movie.title}...`);
+
+            const moviePng = await generateSlidePng(
+                ReelMovieSlideTemplate({
+                    title: movie.title,
+                    poster: posterBase64Array[i],
+                    rating: movie.rating,
+                    year: movie.year,
+                    genre: movie.genre,
+                    place: movies.length - i,
+                }),
+                width,
+                height
+            );
+            const moviePath = join(tempDir, `slide_${i + 1}_movie.png`);
+            writeFileSync(moviePath, moviePng);
+            slideFiles.push(moviePath);
+            slideDurations.push(1.0);
+        }
+
+        // Generate CTA slide
+        console.log(`[${sessionId}] Generating CTA slide...`);
+        const ctaPng = await generateSlidePng(CTASlideTemplate({ ctaText }), width, height);
+        const ctaPath = join(tempDir, `slide_${movies.length + 1}_cta.png`);
+        writeFileSync(ctaPath, ctaPng);
+        slideFiles.push(ctaPath);
+        slideDurations.push(1.2);
+
+        // Generate individual video segments with zoom effect
+        console.log(`[${sessionId}] Creating video segments with zoom effect...`);
+        const segmentFiles = [];
+
+        for (let i = 0; i < slideFiles.length; i++) {
+            const slideFile = slideFiles[i];
+            const duration = slideDurations[i];
+            const frameCount = Math.round(duration * 30);
+            const segmentPath = join(tempDir, `segment_${i}.mp4`);
+
+            // Calculate zoom increment to spread 3% zoom across entire duration
+            const zoomIncrement = (0.03 / frameCount).toFixed(6);
+
+            // Use zoompan filter for subtle zoom (1.00 -> 1.03)
+            const ffmpegZoomCmd = `ffmpeg -y -loop 1 -i "${slideFile}" -vf "zoompan=z='min(zoom+${zoomIncrement},1.03)':d=${frameCount}:s=${width}x${height}:fps=30" -t ${duration} -c:v libx264 -pix_fmt yuv420p -preset fast "${segmentPath}"`;
+
+            execSync(ffmpegZoomCmd, { stdio: "pipe" });
+            segmentFiles.push(segmentPath);
+        }
+
+        // Create concat list file
+        const concatListPath = join(tempDir, "concat_list.txt");
+        const concatContent = segmentFiles.map(f => `file '${f}'`).join("\n");
+        writeFileSync(concatListPath, concatContent);
+
+        // Concatenate all segments
+        console.log(`[${sessionId}] Concatenating video segments...`);
+        const concatenatedPath = join(tempDir, "concatenated.mp4");
+        const ffmpegConcatCmd = `ffmpeg -y -f concat -safe 0 -i "${concatListPath}" -c copy "${concatenatedPath}"`;
+        execSync(ffmpegConcatCmd, { stdio: "pipe" });
+
+        // Calculate total video duration
+        const totalDuration = slideDurations.reduce((sum, d) => sum + d, 0);
+
+        // Add audio track
+        const finalPath = join(tempDir, "final.mp4");
+
+        if (audioUrl) {
+            let audioPath;
+
+            // Check if it's a local file path or URL
+            if (audioUrl.startsWith('/') || audioUrl.startsWith('./') || audioUrl.startsWith('../')) {
+                // Local file path
+                const absolutePath = audioUrl.startsWith('/') ? audioUrl : join(process.cwd(), audioUrl);
+                if (!existsSync(absolutePath)) {
+                    return res.status(400).json({ error: `Audio file not found: ${absolutePath}` });
+                }
+                audioPath = absolutePath;
+                console.log(`[${sessionId}] Using local audio file: ${audioPath}`);
+            } else {
+                // Remote URL - download it
+                console.log(`[${sessionId}] Downloading audio from ${audioUrl}...`);
+                audioPath = join(tempDir, "audio.mp3");
+                const audioResponse = await fetch(audioUrl);
+                if (!audioResponse.ok) {
+                    return res.status(400).json({ error: "Failed to fetch audio from audioUrl" });
+                }
+                const audioBuffer = Buffer.from(await audioResponse.arrayBuffer());
+                writeFileSync(audioPath, audioBuffer);
+            }
+
+            // Add background music (trim audio to match video duration)
+            console.log(`[${sessionId}] Adding background music...`);
+            const ffmpegAudioCmd = `ffmpeg -y -i "${concatenatedPath}" -i "${audioPath}" -t ${totalDuration} -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "${finalPath}"`;
+            execSync(ffmpegAudioCmd, { stdio: "pipe" });
+        } else {
+            // Add silent audio track for Instagram compatibility
+            console.log(`[${sessionId}] Adding silent audio track...`);
+            const ffmpegSilentCmd = `ffmpeg -y -i "${concatenatedPath}" -f lavfi -t ${totalDuration} -i anullsrc=r=44100:cl=stereo -c:v copy -c:a aac -map 0:v:0 -map 1:a:0 "${finalPath}"`;
+            execSync(ffmpegSilentCmd, { stdio: "pipe" });
+        }
+
+        // Read final video
+        console.log(`[${sessionId}] Reading final video...`);
+        const videoBuffer = readFileSync(finalPath);
+
+        // Cleanup temp directory
+        console.log(`[${sessionId}] Cleaning up temp files...`);
+        rmSync(tempDir, { recursive: true, force: true });
+
+        // Send response
+        res.setHeader("Content-Type", "video/mp4");
+        res.setHeader("Content-Disposition", `attachment; filename="reel-${sessionId}.mp4"`);
+        res.send(videoBuffer);
+
+        console.log(`[${sessionId}] Reel generated successfully!`);
+    } catch (error) {
+        console.error(`[${sessionId}] Error generating reel:`, error);
+
+        // Cleanup on error
+        if (existsSync(tempDir)) {
+            rmSync(tempDir, { recursive: true, force: true });
+        }
+
+        res.status(500).json({
+            error: "Failed to generate reel",
+            details: error.message,
+        });
+    }
+});
+
+// Example usage endpoint for reel generation
+app.get("/api/reel-example", (req, res) => {
+    res.json({
+        endpoint: "POST /api/generate-reel",
+        body: {
+            hookText: "STOP scrolling Netflix",
+            movies: [
+                { title: "Inception", poster: "https://image.tmdb.org/t/p/w500/...", rating: 8.8, year: 2010, genre: "Sci-Fi" },
+                { title: "Interstellar", poster: "https://image.tmdb.org/t/p/w500/...", rating: 8.6, year: 2014, genre: "Sci-Fi" },
+            ],
+            ctaText: "Follow @wattawatch",
+            audioUrl: "https://example.com/music.mp3 (optional)",
+        },
+        notes: {
+            resolution: "1080x1920 (9:16 vertical)",
+            duration: "6-9 seconds depending on movie count",
+            format: "H.264 MP4 with AAC audio",
         },
     });
 });
